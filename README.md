@@ -101,102 +101,10 @@ Foi escolhido por ser simples de executar localmente, persistente em disco e per
 
 Além disso, permite recuperação semântica e filtros por metadata.
 
-## 4. Estratégia utilizada para construção do pipeline RAG
 
-A estratégia atual separa claramente as responsabilidades de cada componente.
+## 4. Preparação da base
 
-### 4.1. Preparação dos dados
-
-O dataset original da Olist possui informações tabulares sobre pedidos, produtos, avaliações e entregas.
-
-O processamento transforma os dados originais em um DataFrame específico para o RAG, contendo apenas registros e campos úteis para recuperação e contextualização.
-
-### 4.2. Construção dos documentos
-
-Foi adotada a regra:
-
-> **1 review = 1 documento**
-
-Como as avaliações são curtas, não foi necessário dividir cada review em chunks menores.
-
-Cada documento segue a estrutura conceitual:
-
-```python
-{
-    "id": "R001",
-    "text": "Produto chegou atrasado e com a embalagem danificada.",
-    "metadata": {
-        "review_score": 2,
-    }
-}
-```
-
-O texto é a informação utilizada para gerar o embedding. Os metadados são usados para rastreabilidade, filtros e enriquecimento da consulta.
-
-### 4.3. Geração dos embeddings
-
-Os textos dos documentos são transformados em vetores usando o mesmo modelo de embeddings.
-
-```text
-texto da review
-      ↓
-modelo de embedding
-      ↓
-vetor numérico
-```
-
-Exemplo conceitual:
-
-```text
-"Produto demorou muito para chegar"
-              ↓
-[0.031, -0.218, 0.441, ...]
-```
-
-O mesmo modelo deve ser usado depois para transformar a pergunta do usuário. Isso garante que documentos e consultas estejam no mesmo espaço vetorial.
-
-### 4.4. Indexação na Vector Store
-
-Os documentos e seus respectivos embeddings são armazenados no ChromaDB.
-
-Para cada registro, a Vector Store mantém:
-
-```text
-ID
-+
-texto
-+
-metadata
-+
-embedding
-```
-
-### 4.5. Retrieval
-
-A pergunta do usuário é transformada em embedding e comparada aos vetores armazenados no ChromaDB.
-
-O sistema retorna os **Top-K documentos semanticamente mais próximos**.
-
-Exemplo:
-
-```text
-Pergunta:
-"problemas relacionados ao atraso na entrega"
-
-↓
-
-Possíveis resultados:
-- "Meu pedido levou quase um mês para chegar."
-- "Entrega realizada depois do prazo informado."
-- "Ainda não recebi meu produto."
-```
-
-A recuperação é semântica, portanto não depende apenas da presença exata das mesmas palavras.
-
-
-## 5. Preparação da base
-
-### 5.1. Tratamento dos campos de texto
+### 4.1. Tratamento dos campos de texto
 
 A base de reviews contém dois campos principais de conteúdo textual:
 
@@ -223,7 +131,7 @@ Quando apenas um dos campos existe, seu conteúdo é preservado.
 
 Avaliações sem título **e** sem mensagem são removidas da base utilizada pelo RAG, pois não possuem conteúdo textual para indexação.
 
-### 5.2. Reviews curtas
+### 4.2. Reviews curtas
 
 Não foi adotada uma regra simples baseada apenas em número mínimo de palavras.
 
@@ -247,7 +155,7 @@ Para isso, foi utilizado uma wordlist para remover avaliações que continham ex
 
 Portanto, o critério é baseado em utilidade para Voice of Customer, e não apenas em tamanho.
 
-### 5.3. Limpeza textual
+### 4.3. Limpeza textual
 
 A limpeza é conservadora, pois embeddings modernos funcionam melhor com o texto natural preservado.
 
@@ -270,7 +178,7 @@ Não são aplicadas transformações agressivas como:
 
 Isso evita alterar o significado original das avaliações.
 
-### 5.4. Dataset processado e Vector Store são artefatos diferentes
+### 4.4. Dataset processado e Vector Store são artefatos diferentes
 
 O DataFrame processado continua existindo para análise, auditoria e reprodutibilidade.
 
@@ -295,6 +203,99 @@ Embeddings
         ↓
 Vector Store
 ```
+
+## 5. Estratégia utilizada para construção do pipeline RAG
+
+A estratégia atual separa claramente as responsabilidades de cada componente.
+
+### 5.1. Preparação dos dados
+
+O dataset original da Olist possui informações tabulares sobre pedidos, produtos, avaliações e entregas.
+
+O processamento transforma os dados originais em um DataFrame específico para o RAG, contendo apenas registros e campos úteis para recuperação e contextualização.
+
+### 5.2. Construção dos documentos
+
+Foi adotada a regra:
+
+> **1 review = 1 documento**
+
+Como as avaliações são curtas, não foi necessário dividir cada review em chunks menores.
+
+Cada documento segue a estrutura conceitual:
+
+```python
+{
+    "id": "R001",
+    "text": "Produto chegou atrasado e com a embalagem danificada.",
+    "metadata": {
+        "review_score": 2,
+    }
+}
+```
+
+O texto é a informação utilizada para gerar o embedding. Os metadados são usados para rastreabilidade, filtros e enriquecimento da consulta.
+
+### 5.3. Geração dos embeddings
+
+Os textos dos documentos são transformados em vetores usando o mesmo modelo de embeddings.
+
+```text
+texto da review
+      ↓
+modelo de embedding
+      ↓
+vetor numérico
+```
+
+Exemplo conceitual:
+
+```text
+"Produto demorou muito para chegar"
+              ↓
+[0.031, -0.218, 0.441, ...]
+```
+
+O mesmo modelo deve ser usado depois para transformar a pergunta do usuário. Isso garante que documentos e consultas estejam no mesmo espaço vetorial.
+
+### 5.4. Indexação na Vector Store
+
+Os documentos e seus respectivos embeddings são armazenados no ChromaDB.
+
+Para cada registro, a Vector Store mantém:
+
+```text
+ID
++
+texto
++
+metadata
++
+embedding
+```
+
+### 5.5. Retrieval
+
+A pergunta do usuário é transformada em embedding e comparada aos vetores armazenados no ChromaDB.
+
+O sistema retorna os **Top-K documentos semanticamente mais próximos**.
+
+Exemplo:
+
+```text
+Pergunta:
+"problemas relacionados ao atraso na entrega"
+
+↓
+
+Possíveis resultados:
+- "Meu pedido levou quase um mês para chegar."
+- "Entrega realizada depois do prazo informado."
+- "Ainda não recebi meu produto."
+```
+
+A recuperação é semântica, portanto não depende apenas da presença exata das mesmas palavras.
+
 
 ## 6. Principais decisões técnicas
 
