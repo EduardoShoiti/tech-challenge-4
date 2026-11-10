@@ -120,3 +120,22 @@ def create_vector_store(
     )
 
     return collection
+
+def load_vector_store(
+    persist_path: str = DEFAULT_CHROMA_PATH,
+    collection_name: str = DEFAULT_COLLECTION_NAME,
+):
+    """
+    Abre uma collection já existente no ChromaDB.
+    Não recria embeddings nem documentos.
+    """
+
+    client = chromadb.PersistentClient(
+        path=persist_path
+    )
+
+    collection = client.get_collection(
+        name=collection_name
+    )
+
+    return collection

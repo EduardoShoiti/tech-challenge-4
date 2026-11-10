@@ -1,0 +1,32 @@
+[
+  {
+    "id": "q01",
+    "question": "Quais principais problemas os clientes relatam?",
+    "expected_scope": "in_scope"
+  },
+  {
+    "id": "q02",
+    "question": "Quais reclamações existem sobre produtos quebrados?",
+    "expected_scope": "in_scope"
+  },
+  {
+    "id": "q03",
+    "question": "Quais problemas aparecem quando o cliente recebe o produto errado?",
+    "expected_scope": "in_scope"
+  },
+  {
+    "id": "q04",
+    "question": "Qual a capital do Brasil?",
+    "expected_scope": "out_of_scope"
+  },
+  {
+    "id": "q05",
+    "question": "Qual é a taxa Selic atual?",
+    "expected_scope": "out_of_scope"
+  },
+  {
+    "id": "q06",
+    "question": "Quem ganhou a Copa do Mundo de 2014?",
+    "expected_scope": "out_of_scope"
+  }
+]
