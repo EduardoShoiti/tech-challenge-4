@@ -9,7 +9,7 @@ A proposta é permitir que um usuário faça perguntas em linguagem natural sobr
 - O que os clientes mais elogiam?
 - Quais problemas aparecem com maior frequência em determinada categoria?
 
-O sistema deverá recuperar as avaliações mais relevantes e, posteriormente, utilizar um LLM para gerar respostas fundamentadas nas evidências encontradas.
+O sistema recupera as avaliações mais relevantes e utiliza um LLM para gerar respostas fundamentadas nas evidências encontradas.
 
 ## 2. Arquitetura desenvolvida
 
@@ -31,8 +31,8 @@ flowchart LR
     F --> H[Top-K reviews relevantes]
     H --> V[Validação de evidência]
 
-    V -. próxima etapa .-> I[Prompt + LLM]
-    I -. próxima etapa .-> J[Resposta + evidências]
+    V --> I[Prompt + LLM]
+    I --> J[Resposta + evidências]
 ```
 
 ### Estrutura lógica
@@ -103,6 +103,31 @@ Foi escolhido por ser simples de executar localmente, persistente em disco e per
 - embedding.
 
 Além disso, permite recuperação semântica e filtros por metadata.
+
+### LLM
+
+- **Gemini API**
+- SDK oficial **`google-genai`**
+- Modelo inicial: **`gemini-3.1-flash-lite`**
+
+O pipeline depende apenas de um contrato genérico com o método `generate(prompt)`. A integração com Gemini fica isolada em um adaptador, permitindo trocar o provedor sem alterar o retrieval, o prompt ou o restante do pipeline RAG.
+
+#### Escolha do modelo
+
+O `gemini-3.1-flash-lite` foi adotado como baseline porque o LLM recebe apenas uma pergunta e poucas reviews recuperadas. Sua função é sintetizar evidências em uma resposta curta, sem executar raciocínio complexo, agentes ou processamento multimodal.
+
+Os principais motivos da escolha são:
+
+- baixa latência para consultas interativas;
+- capacidade suficiente para seguir o prompt e responder com base nas reviews;
+- disponibilidade no free tier da Gemini API;
+- menor custo no plano pago que modelos Flash mais avançados;
+- funcionamento confirmado no projeto, enquanto o `gemini-3.8-flash` apresentou timeout durante os testes.
+
+Na tabela de preços consultada em novembro de 2026, o `gemini-3.1-flash-lite` custa US$ 0,25 por milhão de tokens de entrada e US$ 1,50 por milhão de tokens de saída no plano pago. No free tier, entrada e saída são gratuitas dentro dos limites da conta.
+
+Também consideramos o `gemini-2.5-flash-lite` por ser mais barato no plano pago, mas o Google limita seu acesso para novos projetos e recomenda modelos mais recentes. Por isso, o `gemini-3.1-flash-lite` oferece atualmente o melhor equilíbrio entre simplicidade, custo e qualidade esperada para este RAG.
+
 
 
 ## 4. Preparação da base
@@ -378,6 +403,12 @@ Consulta:
 pergunta → embedding → ChromaDB → Top-K
 ```
 
+### 6.7. LLM desacoplado do pipeline
+
+O pipeline recebe uma implementação de LLM pronta para uso. O adaptador `GeminiLLM` é responsável apenas pela chamada à Gemini API.
+
+Para utilizar outro provedor, basta criar uma classe com o método `generate(prompt)` e fornecê-la ao pipeline.
+
 ---
 
 ### Responsabilidades dos arquivos
@@ -393,6 +424,11 @@ pergunta → embedding → ChromaDB → Top-K
 | `retriever.py` | Recupera os Top-K documentos e valida a evidência |
 | `evaluation.py` | Executa perguntas de avaliação e resume as distâncias |
 | `test_evaluation.py` | Carrega os componentes e executa a avaliação do retrieval |
+| `llm.py` | Define o contrato genérico esperado de um LLM |
+| `gemini_llm.py` | Adapta a Gemini API ao contrato do projeto |
+| `prompts.py` | Monta o prompt com pergunta, regras e evidências |
+| `rag_pipeline.py` | Orquestra retrieval, validação e geração da resposta |
+| `run_rag.py` | Executa uma consulta completa pela linha de comando |
 
 ---
 
@@ -489,6 +525,28 @@ python src/test_evaluation.py
 ```
 
 O script utiliza as perguntas em `evaluation/retrieval_questions.json` e apresenta as distâncias de cada consulta e o resumo por grupo.
+
+### 8.7. Configurar a Gemini API
+
+Criar o arquivo local de configuração a partir do exemplo:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Preencher `GEMINI_API_KEY` no arquivo `.env` com a chave criada no Google AI Studio. O arquivo `.env` não é versionado.
+
+O modelo pode ser alterado pela variável `LLM_MODEL_NAME`, sem mudanças no código do pipeline.
+
+### 8.8. Executar o pipeline RAG
+
+Com o índice vetorial já construído, executar:
+
+```powershell
+python src/run_rag.py "Quais problemas comuns de entrega?"
+```
+
+Quando não há evidência suficiente, o sistema retorna uma mensagem de fallback sem chamar o LLM. Quando há evidência, a resposta é gerada e as reviews utilizadas são exibidas em seguida.
 
 
 ## 9. Dataset

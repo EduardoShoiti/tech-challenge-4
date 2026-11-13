@@ -38,3 +38,5 @@ desktop.ini
 *.joblib
 mlruns/
 wandb/
+
+tests/
