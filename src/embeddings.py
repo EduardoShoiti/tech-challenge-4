@@ -1,15 +1,9 @@
 import numpy as np
 from sentence_transformers import SentenceTransformer
-
-
-MODEL_NAME = (
-    "sentence-transformers/"
-    "paraphrase-multilingual-MiniLM-L12-v2"
-)
-
+from config import EMBEDDING_MODEL_NAME
 
 def load_embedding_model(
-    model_name: str = MODEL_NAME
+    model_name: str = EMBEDDING_MODEL_NAME
 ) -> SentenceTransformer:
     """
     Carrega o modelo utilizado para gerar embeddings.

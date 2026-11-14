@@ -9,7 +9,7 @@ A proposta é permitir que um usuário faça perguntas em linguagem natural sobr
 - O que os clientes mais elogiam?
 - Quais problemas aparecem com maior frequência em determinada categoria?
 
-O sistema deverá recuperar as avaliações mais relevantes e, posteriormente, utilizar um LLM para gerar respostas fundamentadas nas evidências encontradas.
+O sistema recupera as avaliações mais relevantes e utiliza um LLM para gerar respostas fundamentadas nas evidências encontradas.
 
 ## 2. Arquitetura desenvolvida
 
@@ -29,9 +29,10 @@ flowchart LR
     Q[Pergunta do usuário] --> G[Embedding da pergunta]
     G --> F
     F --> H[Top-K reviews relevantes]
+    H --> V[Validação de evidência]
 
-    H -. próxima etapa .-> I[Prompt + LLM]
-    I -. próxima etapa .-> J[Resposta + evidências]
+    V --> I[Prompt + LLM]
+    I --> J[Resposta + evidências]
 ```
 
 ### Estrutura lógica
@@ -56,6 +57,8 @@ retriever.py
         ↓
 Top-K reviews relevantes
         ↓
+Validação de evidência
+        ↓
 Prompt + LLM
         ↓
 Resposta + Evidências
@@ -69,7 +72,7 @@ Resposta + Evidências
 
 ### Manipulação e preparação dos dados
 
-- **pandas** — leitura, limpeza, joins e transformação da base.
+- **pandas** — leitura, limpeza e transformação da base.
 - **numpy** — suporte a tipos numéricos e conversões auxiliares.
 - **pyarrow** — leitura/escrita de arquivos Parquet.
 
@@ -100,6 +103,31 @@ Foi escolhido por ser simples de executar localmente, persistente em disco e per
 - embedding.
 
 Além disso, permite recuperação semântica e filtros por metadata.
+
+### LLM
+
+- **Gemini API**
+- SDK oficial **`google-genai`**
+- Modelo inicial: **`gemini-3.1-flash-lite`**
+
+O pipeline depende apenas de um contrato genérico com o método `generate(prompt)`. A integração com Gemini fica isolada em um adaptador, permitindo trocar o provedor sem alterar o retrieval, o prompt ou o restante do pipeline RAG.
+
+#### Escolha do modelo
+
+O `gemini-3.1-flash-lite` foi adotado como baseline porque o LLM recebe apenas uma pergunta e poucas reviews recuperadas. Sua função é sintetizar evidências em uma resposta curta, sem executar raciocínio complexo, agentes ou processamento multimodal.
+
+Os principais motivos da escolha são:
+
+- baixa latência para consultas interativas;
+- capacidade suficiente para seguir o prompt e responder com base nas reviews;
+- disponibilidade no free tier da Gemini API;
+- menor custo no plano pago que modelos Flash mais avançados;
+- funcionamento confirmado no projeto, enquanto o `gemini-3.8-flash` apresentou timeout durante os testes.
+
+Na tabela de preços consultada em novembro de 2026, o `gemini-3.1-flash-lite` custa US$ 0,25 por milhão de tokens de entrada e US$ 1,50 por milhão de tokens de saída no plano pago. No free tier, entrada e saída são gratuitas dentro dos limites da conta.
+
+Também consideramos o `gemini-2.5-flash-lite` por ser mais barato no plano pago, mas o Google limita seu acesso para novos projetos e recomenda modelos mais recentes. Por isso, o `gemini-3.1-flash-lite` oferece atualmente o melhor equilíbrio entre simplicidade, custo e qualidade esperada para este RAG.
+
 
 
 ## 4. Preparação da base
@@ -133,9 +161,7 @@ Avaliações sem título **e** sem mensagem são removidas da base utilizada pel
 
 ### 4.2. Reviews curtas
 
-Não foi adotada uma regra simples baseada apenas em número mínimo de palavras.
-
-Isso ocorre porque reviews curtas podem ser semanticamente muito úteis:
+Reviews curtas com duas ou mais palavras podem ser semanticamente úteis e são mantidas, por exemplo:
 
 ```text
 "não chegou"
@@ -143,7 +169,13 @@ Isso ocorre porque reviews curtas podem ser semanticamente muito úteis:
 "entrega atrasada"
 ```
 
-Enquanto outras possuem pouco valor descritivo:
+São removidas as reviews:
+
+- sem conteúdo textual;
+- formadas por apenas uma palavra;
+- que correspondem à lista de expressões genéricas definida no pipeline.
+
+Exemplos de expressões genéricas:
 
 ```text
 "bom"
@@ -151,22 +183,20 @@ Enquanto outras possuem pouco valor descritivo:
 "muito bom"
 ```
 
-Para isso, foi utilizado uma wordlist para remover avaliações que continham exatamente e apenas essas palavras. O que reduziu cerca de 60% de avaliações genéricas e que não seriam úteis para o RAG.
-
-Portanto, o critério é baseado em utilidade para Voice of Customer, e não apenas em tamanho.
+Também são removidos textos duplicados, mantendo apenas a primeira ocorrência.
 
 ### 4.3. Limpeza textual
 
 A limpeza é conservadora, pois embeddings modernos funcionam melhor com o texto natural preservado.
 
-São tratados principalmente:
+São tratados:
 
 - valores nulos;
 - strings vazias;
-- espaços duplicados;
-- quebras de linha desnecessárias;
-- HTML, quando presente;
-- URLs sem valor semântico, quando presentes.
+- espaços no início e no fim dos campos;
+- pontuação usada na união entre título e mensagem.
+
+Uma versão normalizada do texto é criada apenas para aplicar o filtro de expressões genéricas. O `review_text` original é preservado para a geração dos embeddings.
 
 Não são aplicadas transformações agressivas como:
 
@@ -210,9 +240,7 @@ A estratégia atual separa claramente as responsabilidades de cada componente.
 
 ### 5.1. Preparação dos dados
 
-O dataset original da Olist possui informações tabulares sobre pedidos, produtos, avaliações e entregas.
-
-O processamento transforma os dados originais em um DataFrame específico para o RAG, contendo apenas registros e campos úteis para recuperação e contextualização.
+Nesta etapa, o projeto utiliza o arquivo de avaliações da Olist. O processamento transforma os títulos e comentários em um DataFrame específico para o RAG, preservando também a nota da avaliação.
 
 ### 5.2. Construção dos documentos
 
@@ -296,6 +324,14 @@ Possíveis resultados:
 
 A recuperação é semântica, portanto não depende apenas da presença exata das mesmas palavras.
 
+Além dos resultados, o retriever calcula:
+
+- a menor distância encontrada;
+- a distância média dos três primeiros resultados;
+- se há evidência suficiente de acordo com os thresholds configurados.
+
+Atualmente são recuperadas cinco reviews por consulta. Os limites iniciais são `0.65` para a melhor distância e `0.66` para a média das três primeiras distâncias.
+
 
 ## 6. Principais decisões técnicas
 
@@ -367,17 +403,45 @@ Consulta:
 pergunta → embedding → ChromaDB → Top-K
 ```
 
+### 6.7. LLM desacoplado do pipeline
+
+O pipeline recebe uma implementação de LLM pronta para uso. O adaptador `GeminiLLM` é responsável apenas pela chamada à Gemini API.
+
+Para utilizar outro provedor, basta criar uma classe com o método `generate(prompt)` e fornecê-la ao pipeline.
+
 ---
 
 ### Responsabilidades dos arquivos
 
 | Arquivo | Responsabilidade |
 |---|---|
+| `data_preparation.py` | Prepara o CSV de avaliações e gera o dataset processado |
+| `config.py` | Centraliza modelo, caminhos e parâmetros do retrieval |
 | `document_builder.py` | Converte cada linha do DataFrame em documento RAG |
 | `embeddings.py` | Carrega o modelo e gera embeddings |
 | `build_vector_store.py` | Cria/persiste a collection no ChromaDB |
 | `build_index.py` | Orquestra todo o pipeline de indexação |
-| `retriever.py` | Vetoriza consultas e recupera os Top-K documentos |
+| `retriever.py` | Recupera os Top-K documentos e valida a evidência |
+| `evaluation.py` | Executa perguntas de avaliação e resume as distâncias |
+| `test_evaluation.py` | Carrega os componentes e executa a avaliação do retrieval |
+| `llm.py` | Define o contrato genérico esperado de um LLM |
+| `gemini_llm.py` | Adapta a Gemini API ao contrato do projeto |
+| `prompts.py` | Monta o prompt com pergunta, regras e evidências |
+| `rag_pipeline.py` | Orquestra retrieval, validação e geração da resposta |
+| `run_rag.py` | Executa uma consulta completa pela linha de comando |
+
+---
+
+## 7. Avaliação do retrieval
+
+O projeto possui um conjunto inicial com seis perguntas em `evaluation/retrieval_questions.json`:
+
+- três perguntas dentro do escopo das avaliações;
+- três perguntas fora do escopo.
+
+A avaliação compara a melhor distância e a média das três primeiras distâncias entre os dois grupos. Os resultados iniciais indicam separação parcial, mas o conjunto ainda é pequeno e os thresholds devem ser tratados como valores iniciais para teste.
+
+Perguntas amplas, como aquelas sobre os principais problemas relatados, podem apresentar distância maior que perguntas específicas sobre produto quebrado ou produto errado.
 
 ---
 
@@ -417,10 +481,16 @@ pip install -r requirements.txt
 
 ### 8.4. Preparar os dados
 
-Executar os notebooks de EDA e preparação ou o pipeline equivalente para gerar:
+Executar o pipeline de preparação:
+
+```powershell
+python src/data_preparation.py
+```
+
+O comando gera:
 
 ```text
-data/processed/reviews_for_rag.parquet
+data/processed/df_reviews_rag.parquet
 ```
 
 O arquivo deve conter, no mínimo:
@@ -430,14 +500,53 @@ review_id
 review_text
 ```
 
-E pode conter metadados adicionais, como:
+O metadado utilizado atualmente é:
 
 ```text
 review_score
-product_category
-delayed
-delay_days
 ```
+
+### 8.5. Construir o índice vetorial
+
+Quando o dataset, o texto dos documentos ou o modelo de embeddings mudar, executar:
+
+```powershell
+python src/build_index.py
+```
+
+O índice é persistido na pasta `chroma_db/`. Não é necessário reconstruí-lo para cada consulta.
+
+### 8.6. Executar a avaliação
+
+Com o índice já construído, executar:
+
+```powershell
+python src/test_evaluation.py
+```
+
+O script utiliza as perguntas em `evaluation/retrieval_questions.json` e apresenta as distâncias de cada consulta e o resumo por grupo.
+
+### 8.7. Configurar a Gemini API
+
+Criar o arquivo local de configuração a partir do exemplo:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Preencher `GEMINI_API_KEY` no arquivo `.env` com a chave criada no Google AI Studio. O arquivo `.env` não é versionado.
+
+O modelo pode ser alterado pela variável `LLM_MODEL_NAME`, sem mudanças no código do pipeline.
+
+### 8.8. Executar o pipeline RAG
+
+Com o índice vetorial já construído, executar:
+
+```powershell
+python src/run_rag.py "Quais problemas comuns de entrega?"
+```
+
+Quando não há evidência suficiente, o sistema retorna uma mensagem de fallback sem chamar o LLM. Quando há evidência, a resposta é gerada e as reviews utilizadas são exibidas em seguida.
 
 
 ## 9. Dataset

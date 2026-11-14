@@ -29,7 +29,7 @@ def load_data(
 
     print("Carregando dataset...")
 
-    df = pd.read_parquet(data_path).head(50)
+    df = pd.read_parquet(data_path)
 
     print(
         f"Dataset carregado com "
@@ -169,7 +169,6 @@ def test_retrieval(
 
 if __name__ == "__main__":
 
-    build_rag_index()
     collection, model = build_rag_index()
 
     test_retrieval(
