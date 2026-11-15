@@ -464,15 +464,77 @@ Os resultados mostram que o retrieval encontra conteúdo relevante para as pergu
 
 ---
 
-## 8. Como reproduzir a solução
+## 8. Exemplos reais de perguntas e respostas
 
-### 8.1. Pré-requisitos
+### 8.1. Exemplo 1
+
+**Pergunta:**
+
+> Quais principais problemas os clientes relatam?
+
+**Resposta:**
+
+> Com base nas avaliações fornecidas, os principais problemas relatados pelos clientes são: 
+<br>**Dificuldade de comunicação e atendimento:** Os clientes apontam falta de compromisso e consideração [Review 1, Review 2], atendimento consideradopéssimo, ausência de canal para reclamações [Review 3] e grande dificuldade em contatar o fornecedor para a resolução de problemas [Review 4].
+<br>**Divergência no produto:** Houve relato de recebimento de produto diferente do que foi comprado, o que gerou frustração e perda de outras oportunidades de compra [Review 5].
+<br><br>Evidências recuperadas:
+<br>[Review 1] nota=1 distância=0.6692
+<br>Falta de compromisso com o cliente
+<br><br>[Review 2] nota=1 distância=0.6769
+<br>Falta de consideração com o cliente
+<br><br>[Review 3] nota=1 distância=0.7725
+<br>Pessimo atendimento, sem canal de reclamação 
+fornecedor
+<br><br>[Review 4] nota=1 distância=0.7941
+<br>Há uma grande dificuldade em contactar o fornecedor para resolver qualquer problema
+<br><br>[Review 5] nota=2 distância=0.8070
+<br>Produto recebido divergente ao comprado, gerando frustração e perda de oferta de outras opções analisadas
+
+### 8.2. Exemplo 2
+
+**Pergunta:**
+
+> Qual é a taxa Selic atual?
+
+**Resposta:**
+
+> Não encontrei evidências suficientes nas avaliações para responder a essa pergunta.
+
+
+### 8.3. Exemplo 3
+
+**Pergunta:**
+
+> Qual é o telefone atual do atendimento ao cliente?
+
+**Resposta:**
+
+> Não há evidências suficientes para confirmar o telefone atual do atendimento ao cliente.
+<br><br> Embora o [Review 5] mencione o número 4003 1000 em um relato de contato, não é possível confirmar se este é o canal oficial ou atual de atendimento. O [Review 4] cita o número 02-667550502, mas não especifica a que serviço ele pertence. O [Review 1] indica que o cliente não possui os números de contatonecessários.
+<br><br> Evidências recuperadas:
+<br>[Review 1] nota=1 distância=0.4769
+<br>Preciso de números telefones de contato com o atendimento baratheon ou do vendedor.
+URGENTE
+<br><br>[Review 2] nota=5 distância=0.5892
+<br>Também ligar para o cliente quando for preciso
+<br><br>[Review 3] nota=5 distância=0.6322
+<br>Capa de celular. Super rápido a entrega recomendar muito
+<br><br>[Review 4] nota=5 distância=0.6652
+<br>recomend 02-667550502 de
+<br><br>[Review 5] nota=1 distância=0.6832
+<br>Estpu preocupada, no status de recebimento consta como entregue dia 06/08, porem ainda não recebi o pedido. Inclusive liguei no telefone 4003 1000
+
+---
+
+## 9. Como reproduzir a solução
+
+### 9.1. Pré-requisitos
 
 - Python
 - Git
 - Acesso à internet na primeira execução para instalar dependências e baixar o modelo de embeddings
 
-### 8.2. Criar ambiente virtual
+### 9.2. Criar ambiente virtual
 
 No Windows / PowerShell:
 
@@ -492,13 +554,13 @@ Atualizar o `pip`:
 python -m pip install --upgrade pip setuptools wheel
 ```
 
-### 8.3. Instalar dependências
+### 9.3. Instalar dependências
 
 ```powershell
 pip install -r requirements.txt
 ```
 
-### 8.4. Preparar os dados
+### 9.4. Preparar os dados
 
 Executar o pipeline de preparação:
 
@@ -525,7 +587,7 @@ O metadado utilizado atualmente é:
 review_score
 ```
 
-### 8.5. Construir o índice vetorial
+### 9.5. Construir o índice vetorial
 
 Quando o dataset, o texto dos documentos ou o modelo de embeddings mudar, executar:
 
@@ -535,7 +597,7 @@ python src/build_index.py
 
 O índice é persistido na pasta `chroma_db/`. Não é necessário reconstruí-lo para cada consulta.
 
-### 8.6. Executar a avaliação
+### 9.6. Executar a avaliação
 
 Com o índice já construído, executar:
 
@@ -545,7 +607,7 @@ python src/test_evaluation.py
 
 O script utiliza as perguntas em `evaluation/retrieval_questions.json` e apresenta as distâncias de cada consulta e o resumo por grupo.
 
-### 8.7. Configurar a Gemini API
+### 9.7. Configurar a Gemini API
 
 Criar o arquivo local de configuração a partir do exemplo:
 
@@ -557,7 +619,7 @@ Preencher `GEMINI_API_KEY` no arquivo `.env` com a chave criada no Google AI Stu
 
 O modelo pode ser alterado pela variável `LLM_MODEL_NAME`, sem mudanças no código do pipeline.
 
-### 8.8. Executar o pipeline RAG
+### 9.8. Executar o pipeline RAG
 
 Com o índice vetorial já construído, executar:
 
@@ -568,7 +630,7 @@ python src/run_rag.py "Quais problemas comuns de entrega?"
 Quando não há evidência suficiente, o sistema retorna uma mensagem de fallback sem chamar o LLM. Quando há evidência, a resposta é gerada e as reviews utilizadas são exibidas em seguida.
 
 
-## 9. Dataset
+## 10. Dataset
 
 **Brazilian E-Commerce Public Dataset by Olist**  
 Disponível no Kaggle:
