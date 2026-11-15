@@ -330,7 +330,7 @@ Além dos resultados, o retriever calcula:
 - a distância média dos três primeiros resultados;
 - se há evidência suficiente de acordo com os thresholds configurados.
 
-Atualmente são recuperadas cinco reviews por consulta. Os limites iniciais são `0.65` para a melhor distância e `0.66` para a média das três primeiras distâncias.
+Atualmente são recuperadas cinco reviews por consulta. Após a calibração com o conjunto de avaliação, os limites adotados são `0.67` para a melhor distância e `0.71` para a média das três primeiras distâncias.
 
 
 ## 6. Principais decisões técnicas
@@ -434,14 +434,33 @@ Para utilizar outro provedor, basta criar uma classe com o método `generate(pro
 
 ## 7. Avaliação do retrieval
 
-O projeto possui um conjunto inicial com seis perguntas em `evaluation/retrieval_questions.json`:
+O projeto possui um conjunto com 20 perguntas em `evaluation/retrieval_questions.json`:
 
-- três perguntas dentro do escopo das avaliações;
-- três perguntas fora do escopo.
+- 12 perguntas dentro do escopo das avaliações;
+- 8 perguntas fora do escopo;
+- casos fora do escopo semanticamente próximos ao domínio, como garantia, rastreamento de pedido, estoque e cancelamento.
 
-A avaliação compara a melhor distância e a média das três primeiras distâncias entre os dois grupos. Os resultados iniciais indicam separação parcial, mas o conjunto ainda é pequeno e os thresholds devem ser tratados como valores iniciais para teste.
+Para avaliar a identificação de perguntas com evidência suficiente, são calculadas `accuracy`, `precision`, `recall` e `F1`, considerando `in_scope` como a classe positiva. Os thresholds são calibrados a partir das distâncias já coletadas, sem repetir as consultas ao ChromaDB.
 
-Perguntas amplas, como aquelas sobre os principais problemas relatados, podem apresentar distância maior que perguntas específicas sobre produto quebrado ou produto errado.
+As perguntas válidas também possuem termos esperados. Um documento é considerado relevante quando contém ao menos um desses termos após normalização. Essa heurística simples permite calcular:
+
+- **Hit@5:** presença de pelo menos um documento relevante nos cinco resultados;
+- **Precision@5:** proporção de documentos relevantes entre os cinco resultados;
+- **MRR:** posição do primeiro documento relevante.
+
+Resultados atuais:
+
+| Grupo de métricas | Métrica | Resultado |
+|---|---|---:|
+| Identificação de escopo | Accuracy | 85% |
+| Identificação de escopo | Precision | 80% |
+| Identificação de escopo | Recall | 100% |
+| Identificação de escopo | F1 | 88% |
+| Relevância do retrieval | Hit@5 | 100% |
+| Relevância do retrieval | Precision@5 média | 86% |
+| Relevância do retrieval | MRR | 1,0 |
+
+Os resultados mostram que o retrieval encontra conteúdo relevante para as perguntas válidas. A principal limitação está na validação de escopo: perguntas operacionais sobre pedido, estoque ou cancelamento podem ser semanticamente próximas das reviews e passar pelos thresholds. Portanto, distância vetorial sozinha não resolve todos os casos fora do escopo.
 
 ---
 
