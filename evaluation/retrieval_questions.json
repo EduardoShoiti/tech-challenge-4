@@ -2,31 +2,113 @@
   {
     "id": "q01",
     "question": "Quais principais problemas os clientes relatam?",
-    "expected_scope": "in_scope"
+    "expected_scope": "in_scope",
+    "expected_terms": ["atras", "não chegou", "não recebi", "quebrad", "avariad", "errad", "defeito", "qualidade", "falta", "atendimento", "reclamação", "fornecedor", "divergente", "frustração"]
   },
   {
     "id": "q02",
     "question": "Quais reclamações existem sobre produtos quebrados?",
-    "expected_scope": "in_scope"
+    "expected_scope": "in_scope",
+    "expected_terms": ["quebrad", "avariad", "danificad"]
   },
   {
     "id": "q03",
     "question": "Quais problemas aparecem quando o cliente recebe o produto errado?",
-    "expected_scope": "in_scope"
+    "expected_scope": "in_scope",
+    "expected_terms": ["errad", "incorret", "erro"]
   },
   {
     "id": "q04",
-    "question": "Qual a capital do Brasil?",
-    "expected_scope": "out_of_scope"
+    "question": "O que os clientes relatam sobre atraso na entrega?",
+    "expected_scope": "in_scope",
+    "expected_terms": ["atras", "demor", "prazo"]
   },
   {
     "id": "q05",
+    "question": "Quais avaliações mencionam pedidos que não chegaram?",
+    "expected_scope": "in_scope",
+    "expected_terms": ["não chegou", "não recebi", "não entreg", "não chegam", "aguardando a entrega"]
+  },
+  {
+    "id": "q06",
+    "question": "Quais problemas são relatados sobre a embalagem?",
+    "expected_scope": "in_scope",
+    "expected_terms": ["embalagem", "pacote", "caixa"]
+  },
+  {
+    "id": "q07",
+    "question": "O que os clientes dizem sobre produtos de baixa qualidade?",
+    "expected_scope": "in_scope",
+    "expected_terms": ["qualidade", "ruim", "frágil", "fragil", "defeito"]
+  },
+  {
+    "id": "q08",
+    "question": "Quais elogios aparecem sobre a rapidez da entrega?",
+    "expected_scope": "in_scope",
+    "expected_terms": ["rápid", "rapid", "antes do prazo", "entrega"]
+  },
+  {
+    "id": "q09",
+    "question": "O que os clientes elogiam nos produtos recebidos?",
+    "expected_scope": "in_scope",
+    "expected_terms": ["ótimo", "excelente", "qualidade", "gostei", "perfeito", "recomendo", "compromisso", "respeito", "consideração", "agilidade", "satisfação", "parabéns", "corretamente"]
+  },
+  {
+    "id": "q10",
+    "question": "Quais problemas aparecem nas avaliações de clientes insatisfeitos?",
+    "expected_scope": "in_scope",
+    "expected_terms": ["não chegou", "não recebi", "atras", "quebrad", "errad", "defeito", "ruim", "péssim", "desrespeito", "falta", "divergente", "frustração", "consideração", "compromisso"]
+  },
+  {
+    "id": "q11",
+    "question": "Existem reclamações sobre produtos incompletos ou com peças faltando?",
+    "expected_scope": "in_scope",
+    "expected_terms": ["falt", "incomplet", "peça", "peca"]
+  },
+  {
+    "id": "q12",
+    "question": "O que os clientes relatam sobre atendimento ou contato com o vendedor?",
+    "expected_scope": "in_scope",
+    "expected_terms": ["atendimento", "vendedor", "loja", "contato"]
+  },
+  {
+    "id": "q13",
+    "question": "Qual é a capital do Brasil?",
+    "expected_scope": "out_of_scope"
+  },
+  {
+    "id": "q14",
     "question": "Qual é a taxa Selic atual?",
     "expected_scope": "out_of_scope"
   },
   {
-    "id": "q06",
+    "id": "q15",
     "question": "Quem ganhou a Copa do Mundo de 2014?",
+    "expected_scope": "out_of_scope"
+  },
+  {
+    "id": "q16",
+    "question": "Qual é a política oficial de devolução da Olist?",
+    "expected_scope": "out_of_scope"
+  },
+  {
+    "id": "q17",
+    "question": "Quantos meses de garantia a loja oferece?",
+    "expected_scope": "out_of_scope"
+  },
+  {
+    "id": "q18",
+    "question": "Qual é o telefone atual do atendimento ao cliente?",
+    "expected_scope": "out_of_scope"
+  },
+  {
+    "id": "q19",
+    "question": "Onde está o meu pedido de número 12345?",
+    "expected_scope": "out_of_scope"
+  },
+  {
+    "id": "q20",
+    "question": "Como é calculado o valor oficial do frete?",
     "expected_scope": "out_of_scope"
   }
 ]
