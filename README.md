@@ -1,5 +1,7 @@
 # Tech Challenge 4
 
+<a href="https://youtu.be/ATCn6-8lBu4" target="_blank" rel="noopener noreferrer">Vídeo do Projeto</a>
+
 ## 1. Objetivo do projeto
 
 A proposta é permitir que um usuário faça perguntas em linguagem natural sobre as avaliações de clientes da Olist, como:
@@ -636,3 +638,5 @@ Quando não há evidência suficiente, o sistema retorna uma mensagem de fallbac
 Disponível no Kaggle:
 
 https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce/data
+
+https://youtu.be/ATCn6-8lBu4
