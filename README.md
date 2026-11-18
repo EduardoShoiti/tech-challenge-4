@@ -1,5 +1,8 @@
 # Tech Challenge 4
 
+Print Conclusão Trilha Databricks:
+![Print Conclusão Trilha Databricks](print_conclusao_trilha.png)
+
 <a href="https://youtu.be/ATCn6-8lBu4" target="_blank" rel="noopener noreferrer">Vídeo do Projeto</a>
 
 ## 1. Objetivo do projeto
